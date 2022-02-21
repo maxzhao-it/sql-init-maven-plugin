@@ -29,10 +29,21 @@ public class InitTableMojo extends AbstractMojo {
      */
     @Parameter(required = true)
     private DataSourceConfig dataSource;
+    /**
+     * SQL 文件编码
+     */
     @Parameter(required = true)
     private File sqlFile;
+    /**
+     * SQL 文件编码
+     */
     @Parameter
     private String sqlFileEncoding;
+    /**
+     * 忽略SQL脚本中的错误（单行SQL执行）
+     */
+    @Parameter
+    private Boolean ignoreSqlError;
     /**
      * SQL 分隔符
      */
@@ -54,8 +65,24 @@ public class InitTableMojo extends AbstractMojo {
             return;
         }
         log.info("====================== 开始执行SQL脚本 ======================");
-        if (this.config.executeSqls(sqlList)) {
-            log.info("====================== 执行SQL脚本成功 ======================");
+        if (ignoreSqlError == null) {
+            ignoreSqlError = false;
+        }
+        if (!ignoreSqlError) {
+            if (this.config.executeSqls(sqlList)) {
+                log.info("====================== 执行SQL脚本成功 ======================");
+            }
+        } else {
+            /*遇到错误时继续*/
+            /*执行成功的数量*/
+            int executeSuccessCount = 0;
+            for (String sql : sqlList) {
+                if (this.config.executeSql(sql)) {
+                    /*执行成功*/
+                    executeSuccessCount++;
+                }
+            }
+            log.info("总数量：{} ，执行成功数据量：{}", sqlList.size(), executeSuccessCount);
         }
     }
 

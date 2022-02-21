@@ -45,26 +45,40 @@ public class DBDao {
      */
     public boolean executeSql(String sql) {
         Statement ps = null;
-        connection = dataSourceConfig.getConn();
+        if (connection == null) {
+            connection = dataSourceConfig.getConn();
+        }
         try {
             ps = connection.createStatement();
             return ps.execute(sql);
         } catch (SQLException e) {
             log.error("====================== 执行SQL脚本失败 ======================");
-            log.error("执行失败SQL脚本：\n{}\n", sql);
-            log.error("SQL 执行失败 ", e);
+            log.error("执行失败SQL脚本：\n{}", sql);
+            log.error("SQL 执行失败:{}", e.getMessage());
         } finally {
             //释放资源
             try {
                 if (ps != null) {
                     ps.close();
                 }
-                connection.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
         return false;
+    }
+
+    /**
+     * 关闭数据库连接
+     */
+    public void closeConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -89,7 +103,7 @@ public class DBDao {
             int[] ints = ps.executeBatch();
             /*提交事务*/
             connection.commit();
-            log.info("执行成功数据量：{}", ints.length);
+            log.info("总数量：{} ，执行成功数据量：{}", sqlList.size(), ints.length);
             /*设置自动提交事务*/
             connection.setAutoCommit(true);
             return true;
@@ -102,7 +116,7 @@ public class DBDao {
             } catch (SQLException ex) {
                 log.error("====================== 回滚事务失败 ======================");
             }
-            log.error("执行失败SQL脚本：\n{}\n", String.join(";\n", sqlList));
+            log.error("执行失败SQL脚本：\n{}", String.join(";\n", sqlList));
             log.error("SQL 执行失败 ", e);
         } finally {
             //释放资源
