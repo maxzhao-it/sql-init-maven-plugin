@@ -13,7 +13,7 @@ target
 gen
 
 # log
-applog 
+applog
 
 logs/
 *.out

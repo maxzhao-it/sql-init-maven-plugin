@@ -32,7 +32,7 @@ public class InitTableMojo extends AbstractMojo {
     @Parameter(required = true)
     private File sqlFile;
     @Parameter
-    private String sqlFileEncoding = StandardCharsets.UTF_8.toString();
+    private String sqlFileEncoding;
     /**
      * SQL 分隔符
      */
@@ -42,16 +42,19 @@ public class InitTableMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (this.sqlFileEncoding == null) {
+            this.sqlFileEncoding = StandardCharsets.UTF_8.toString();
+        }
         log.info("====================== 开始 连接数据库 ======================");
-        config = new DBDao(dataSource);
+        this.config = new DBDao(this.dataSource);
         log.info("====================== 开始解析SQL脚本 ======================");
-        List<String> sqlList = readSQLs(sqlFile);
+        List<String> sqlList = readSQLs(this.sqlFile);
         if (sqlList.isEmpty()) {
             log.warn("====================== SQL脚本不存在 ======================");
             return;
         }
         log.info("====================== 开始执行SQL脚本 ======================");
-        if (config.executeSqls(sqlList)) {
+        if (this.config.executeSqls(sqlList)) {
             log.info("====================== 执行SQL脚本成功 ======================");
         }
     }
@@ -135,14 +138,18 @@ public class InitTableMojo extends AbstractMojo {
             reader = new BufferedReader(isr);
             String sqlLine;
             while ((sqlLine = reader.readLine()) != null) {
-                /*先添加*/
-                sqlTemp.append(sqlLine);
+
                 /*去除左右空格*/
                 sqlLine = sqlLine.trim();
                 if (sqlLine.isEmpty() || sqlLine.startsWith("--")
                         || sqlLine.startsWith("//")) {
                     /*Do nothing*/
-                } else if (sqlLine.endsWith(DEFAULT_DELIMITER)) {
+                    continue;
+                }
+                /*先添加当前行数据*/
+                sqlTemp.append(sqlLine)
+                        .append(" ");
+                if (sqlLine.endsWith(DEFAULT_DELIMITER)) {
                     /*最后是否为分号*/
                     sqlList.add(sqlTemp.substring(0, sqlTemp.length() - 1));
                     sqlTemp = new StringBuilder();

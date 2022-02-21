@@ -1,15 +1,12 @@
 package com.gt.boot.plugin.sqlInit.dao;
 
 import com.gt.boot.plugin.sqlInit.config.DataSourceConfig;
-import jdk.nashorn.internal.runtime.ScriptRuntime;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.plexus.util.StringUtils;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -51,8 +48,6 @@ public class DBDao {
         connection = dataSourceConfig.getConn();
         try {
             ps = connection.createStatement();
-//            int[] ints = ps.executeBatch();
-//            log.info("执行成功数据量：{}", ints.length);
             return ps.execute(sql);
         } catch (SQLException e) {
             log.error("====================== 执行SQL脚本失败 ======================");
@@ -64,9 +59,7 @@ public class DBDao {
                 if (ps != null) {
                     ps.close();
                 }
-                if (connection != null) {
-                    connection.close();
-                }
+                connection.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -84,6 +77,8 @@ public class DBDao {
         Statement ps = null;
         connection = dataSourceConfig.getConn();
         try {
+            /*设置手动提交事务*/
+            connection.setAutoCommit(false);
             ps = connection.createStatement();
             for (String sql : sqlList) {
                 if (StringUtils.isBlank(sql)) {
@@ -92,11 +87,22 @@ public class DBDao {
                 ps.addBatch(sql);
             }
             int[] ints = ps.executeBatch();
+            /*提交事务*/
+            connection.commit();
             log.info("执行成功数据量：{}", ints.length);
+            /*设置自动提交事务*/
+            connection.setAutoCommit(true);
             return true;
         } catch (SQLException e) {
             log.error("====================== 执行SQL脚本失败 ======================");
-            log.error("执行失败SQL脚本：\n{}\n", Arrays.toString(sqlList.toArray()));
+            /*回滚事务*/
+            try {
+                connection.rollback();
+                log.error("====================== 回滚事务成功 ======================");
+            } catch (SQLException ex) {
+                log.error("====================== 回滚事务失败 ======================");
+            }
+            log.error("执行失败SQL脚本：\n{}\n", String.join(";\n", sqlList));
             log.error("SQL 执行失败 ", e);
         } finally {
             //释放资源
@@ -104,9 +110,7 @@ public class DBDao {
                 if (ps != null) {
                     ps.close();
                 }
-                if (connection != null) {
-                    connection.close();
-                }
+                connection.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
