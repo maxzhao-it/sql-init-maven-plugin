@@ -16,6 +16,8 @@
         <sqlFile>${project.basedir}/src/http/sql.sql</sqlFile>
         <!-- 脚本文件的编码 -->
         <sqlFileEncoding>UTF-8</sqlFileEncoding>
+        <!--忽略 SQL 错误（单SQL语句执行）-->
+        <ignoreSqlError>true</ignoreSqlError>
         <!-- 数据源配置，( **必配** ) -->
         <dataSource>
             <!-- driverClassName 是要传入的值 -->
